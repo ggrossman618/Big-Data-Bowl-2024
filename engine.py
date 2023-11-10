@@ -1,4 +1,5 @@
 import pandas as pd
+import mappings
 
 def createFilteredDataFrame(df, possessionTeam, defensiveTeam, offenseFormation, down, absoluteYardlineNumber, gameClock,passProbability, 
                             onlyVsDefTeam, includeDown, includeRedzone, includeTwoMin, includePassProb, passProbPercentDiff):
@@ -25,49 +26,8 @@ def createFilteredDataFrame(df, possessionTeam, defensiveTeam, offenseFormation,
 
 
 def prepareDataForModel(df):
-    teamMappings = {
-        'ARI': 0,
-        'ATL': 1,
-        'BAL': 2,
-        'BUF': 3,
-        'CAR': 4,
-        'CHI': 5,
-        'CIN': 6,
-        'CLE': 7,
-        'DAL': 8,
-        'DEN': 9,
-        'DET': 10,
-        'GB': 11,
-        'HOU': 12,
-        'IND': 13,
-        'JAX': 14,
-        'KC': 15,
-        'LAC': 16,
-        'LAR': 17,
-        'LV': 18,
-        'MIA': 19,
-        'MIN': 20,
-        'NE': 21,
-        'NO': 22,
-        'NYG': 23,
-        'NYJ': 24,
-        'PHI': 25,
-        'PIT': 26,
-        'SEA': 27,
-        'SF': 28,
-        'TB': 29,
-        'TEN': 30,
-        'WAS': 31
-    }
-
-    offensiveFormationsMappings = {
-        'SHOTGUN': 0,
-        'I_FORM': 1,
-        'SINGLEBACK': 2,
-        'PISTOL': 3,
-        'WILDCAT': 4,
-        'JUMBO': 5
-    }
+    teamMappings = mappings.teamMappings
+    offensiveFormationsMappings = mappings.offensiveFormationsMappings
 
     preparedDf = df[['defendersInTheBox','playResult']]
     df.loc[:, 'possessionTeam'] = df['possessionTeam'].map(teamMappings)
@@ -114,19 +74,12 @@ def main(possessionTeam, defensiveTeam, offenseFormation, down, absoluteYardline
 main('PHI', 'DAL', 'SHOTGUN', 3, 20, '2:00', .5, False, False, False, False, False, .2)
 
 
-#print(getSeconds('2:00'))
-
-
-
-
-
-# Will likely need to train multiple models based on numbers of defenders in the box and then compare results
-#X = plays[['possessionTeam', 'defensiveTeam', 'offenseFormation', 'down', 'yardlineNumber', 'gameClock', 'playResult', 'defendersInTheBox', 'passProbability']]
-#y = plays['playResult']
-
-
 
 '''
+Will likely need to train multiple models based on numbers of defenders in the box and then compare results
+X = plays[['possessionTeam', 'defensiveTeam', 'offenseFormation', 'down', 'yardlineNumber', 'gameClock', 'playResult', 'defendersInTheBox', 'passProbability']]
+y = plays['playResult']
+
 Key play data to look at:
 - possession team
 - defensive team
@@ -141,9 +94,6 @@ Key play data to look at:
 - defenders in the box
 - yards to go 
 - pass probability
-
-
-code to use later:
 
 
 '''
