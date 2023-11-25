@@ -2,26 +2,47 @@ import pandas as pd
 import mappings
 
 def createFilteredDataFrame(df, possessionTeam, defensiveTeam, offenseFormation, down, absoluteYardlineNumber, gameClock,passProbability, 
-                            onlyVsDefTeam, includeDown, includeRedzone, includeTwoMin, includePassProb, passProbPercentDiff):
-    filteredDataFrame = df[
-        (df['possessionTeam'] == possessionTeam) 
-        & (df['defensiveTeam'] == defensiveTeam if onlyVsDefTeam else True)
-        & (df['offenseFormation'] == offenseFormation) 
-        & (df['down'] == down if includeDown else True)
-        & ((df['absoluteYardlineNumber'] <= 20) if (includeRedzone and absoluteYardlineNumber <= 20) else True)
-        & ((df['gameClock'].apply(getSeconds) <= 120) if (includeTwoMin and getSeconds(gameClock) <= 120) else True)
-        & (((df['passProbability'] <= passProbability + passProbPercentDiff/100) & (df['passProbability'] >= passProbability - passProbPercentDiff/100)) 
-           if includePassProb else True)
-    ]
-
-    filteredDataFrame = filteredDataFrame[['possessionTeam', 'offenseFormation', 'defendersInTheBox','playResult']
-                                          + (['defensiveTeam'] if onlyVsDefTeam else [])
-                                          + (['down'] if includeDown else [])
-                                          + (['absoluteYardlineNumber'] if (includeRedzone and absoluteYardlineNumber <= 20) else [])
-                                          + (['gameClock'] if (includeTwoMin and getSeconds(gameClock) <= 120) else [])
-                                          + (['passProbability'] if includePassProb else [])
-                                          ]
+                            onlyVsDefTeam, includeDown, includeRedzone, includeTwoMin, includePassProb, passProbPercentDiff, retaliationPlay):
+    filteredDataFrame = None
     
+    if retaliationPlay == False:
+        filteredDataFrame = df[
+            (df['possessionTeam'] == possessionTeam) 
+            & (df['defensiveTeam'] == defensiveTeam if onlyVsDefTeam else True)
+            & (df['offenseFormation'] == offenseFormation) 
+            & (df['down'] == down if includeDown else True)
+            & ((df['absoluteYardlineNumber'] <= 20) if (includeRedzone and absoluteYardlineNumber <= 20) else True)
+            & ((df['gameClock'].apply(getSeconds) <= 120) if (includeTwoMin and getSeconds(gameClock) <= 120) else True)
+            & (((df['passProbability'] <= passProbability + passProbPercentDiff/100) & (df['passProbability'] >= passProbability - passProbPercentDiff/100)) 
+            if includePassProb else True)
+        ]
+
+        filteredDataFrame = filteredDataFrame[['possessionTeam', 'offenseFormation', 'defendersInTheBox','playResult'] 
+                                            + (['defensiveTeam'] if onlyVsDefTeam else [])
+                                            + (['down'] if includeDown else [])
+                                            + (['absoluteYardlineNumber'] if (includeRedzone and absoluteYardlineNumber <= 20) else [])
+                                            + (['gameClock'] if (includeTwoMin and getSeconds(gameClock) <= 120) else [])
+                                            + (['passProbability'] if includePassProb else [])
+                                            ]
+    else: 
+        # Sort plays within each game
+        sortedPlays = df.sort_values(by=['gameId', 'playId'])
+
+        # Identify plays with negative or zero playResult
+        negativePlays = sortedPlays[(sortedPlays['playResult'] <= 0)]
+
+        # Retrieve the indexes of the identified plays
+        negativePlaysIndexes = negativePlays.index.tolist()
+
+        # Get the next play after negative plays
+        retaliationPlaysIndexes = [index + 1 for index in negativePlaysIndexes if (index + 1) in sortedPlays.index]
+
+        # Get the retaliation plays
+        retaliationPlays = sortedPlays.loc[retaliationPlaysIndexes]
+
+        # Filter retaliationPlays to only contain first and second downs
+        filteredDataFrame = retaliationPlays[(retaliationPlays['down'] < 3)]
+        
     return filteredDataFrame 
 
 
@@ -57,21 +78,36 @@ def getSeconds(time):
 
 
 def main(possessionTeam, defensiveTeam, offenseFormation, down, absoluteYardlineNumber, gameClock, passProbability, 
-         onlyVsDefTeam, includeDown, includeRedzone, includeTwoMin, includePassProb, passProbPercentDiff):
+         onlyVsDefTeam, includeDown, includeRedzone, includeTwoMin, includePassProb, passProbPercentDiff, retaliationPlay):
     games = pd.read_csv('./data/games.csv')
     players = pd.read_csv('./data/players.csv')
     plays = pd.read_csv('./data/plays.csv')
     tackles = pd.read_csv('./data/tackles.csv')
 
     filteredDf = (createFilteredDataFrame(plays, possessionTeam, defensiveTeam, offenseFormation, down, absoluteYardlineNumber, gameClock, passProbability, 
-                                  onlyVsDefTeam, includeDown, includeRedzone, includeTwoMin, includePassProb, passProbPercentDiff))
+                                  onlyVsDefTeam, includeDown, includeRedzone, includeTwoMin, includePassProb, passProbPercentDiff, retaliationPlay))
     
     preparedDfArr = prepareDataForModel(filteredDf)
     print(preparedDfArr.head())
     
     
 
-main('PHI', 'DAL', 'SHOTGUN', 3, 20, '2:00', .5, False, False, False, False, False, .2)
+main(
+    'PHI', # Posession team
+    'DAL', # Defensive team
+    'SHOTGUN', # Offensive formation
+    3, # Down 
+    20, # AbsoluteYardlineNumber
+    '2:00', # gameClock 
+    .5, # Pass probability
+    False, # Posession team only vs defensive team
+    False, # Only use current down in calculation
+    False, # Only use plays while in redzone
+    False, # Only use plays in last two minutes of quarter
+    False, # Only use plays with similar pass probabilities
+    .2, # Percent difference in passs probabilities to include
+    True # Retaliation play override
+)
 
 
 
@@ -94,6 +130,4 @@ Key play data to look at:
 - defenders in the box
 - yards to go 
 - pass probability
-
-
 '''
