@@ -30,7 +30,8 @@ teamMappings = {
     'SF': 28,
     'TB': 29,
     'TEN': 30,
-    'WAS': 31
+    'WAS': 31,
+    'LA': 17 # Assuming 'LA' is Rams for now 
 }
 
 offensiveFormationsMappings = {
@@ -40,4 +41,9 @@ offensiveFormationsMappings = {
     'PISTOL': 3,
     'WILDCAT': 4,
     'JUMBO': 5
+}
+
+posessionTeamType = {
+    'away': 0,
+    'home': 1
 }
