@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', None)
 
 # Read in data from CSV files
@@ -57,3 +58,24 @@ teamMappings = {
     'TEN': retaliationPlaysFiltered[retaliationPlaysFiltered['possessionTeam'] == 'TEN'],
     'WAS': retaliationPlaysFiltered[retaliationPlaysFiltered['possessionTeam'] == 'WAS']
 }
+
+# Running analytics per team and creating graphs
+for key, value in teamMappings.items():
+    if not teamMappings[key].empty:
+        offenseFormationPercentages = teamMappings[key]['offenseFormation'].value_counts(normalize=True) * 100
+        plt.figure(figsize=(8, 6))
+        offenseFormationPercentages.plot(kind='bar', color='skyblue')
+        plt.ylim(0, 100)  # Set the y-axis limit to 100
+        plt.title(f"{key}'s Retaliation Play Formation Percentage")
+        plt.xlabel('Offensive Formation')
+        plt.ylabel('Percentage')
+        plt.xticks(rotation=0)  # Rotate x-labels if needed
+        plt.tight_layout()
+        plt.show()
+
+
+
+''' 
+notes:
+-for some reason no retaliation plays for rams
+'''
