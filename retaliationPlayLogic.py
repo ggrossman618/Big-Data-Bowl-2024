@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
@@ -77,32 +78,30 @@ teamMappings = {
 }
 
 # Running analytics per team and creating graphs
-
 #Offensive Formations
-for key, value in teamMappings.items():
-    if not teamMappings[key].empty:
-        offenseFormationPercentages = teamMappings[key]['offenseFormation'].value_counts(normalize=True) * 100
-        plt.figure(figsize=(8, 6))
-        offenseFormationPercentages.plot(kind='bar', color='skyblue')
-        plt.ylim(0, 100)  # Set the y-axis limit to 100
-        plt.title(f"{key}'s Retaliation Play Formation Percentage")
-        plt.xlabel('Offensive Formation')
-        plt.ylabel('Percentage')
-        plt.xticks(rotation=0)  # Rotate x-labels if needed
-        plt.tight_layout()
-        plt.show()
+# for key, value in teamMappings.items():
+#     if not teamMappings[key].empty:
+#         offenseFormationPercentages = teamMappings[key]['offenseFormation'].value_counts(normalize=True) * 100
+#         plt.figure(figsize=(8, 6))
+#         offenseFormationPercentages.plot(kind='bar', color='skyblue')
+#         plt.ylim(0, 100)  # Set the y-axis limit to 100
+#         plt.title(f"{key}'s Retaliation Play Formation Percentage")
+#         plt.xlabel('Offensive Formation')
+#         plt.ylabel('Percentage')
+#         plt.xticks(rotation=0)  # Rotate x-labels if needed
+#         plt.tight_layout()
+#         plt.show()
 
-# Machine Learning Stuff
+# Machine learning model for predicting offensive formations
 
-
-# Rank teams' predictability 
-
-teamPredictability = {}
+teamPredictability = {} # Rank teams' predictability based on model accuracy
 
 for team, value in teamMappings.items():
     print('*------------------------------------*')
     print(team)
     print('*-------------------------------------*')
+    
+    # Setting up data for model
     teamName = team
     team = teamMappings[team]
     team['possessionTeam'] = team['possessionTeam'].map(mappings.teamMappings)
@@ -125,14 +124,11 @@ for team, value in teamMappings.items():
     y_pred = model.predict(X_test)
     y_pred_proba = model.predict_proba(X_test)
 
-    # Print the predicted class and the corresponding probabilities
-    # for i in range(len(y_pred)):
-    #     print(f"Predicted class: {y_pred[i]}, probabilities: {y_pred_proba[i]}")
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    teamPredictability[teamName] = round(accuracy_score(y_test, y_pred, sample_weight=None), 2)
-    print("The model's accuracy is: ", accuracy_score(y_test, y_pred, sample_weight=None))
-    print("Classification Report:")
-    print(classification_report(y_test , y_pred))
+    # Print accuracy of model
+    print("The model's accuracy is: ", np.round(accuracy_score(y_test, y_pred, sample_weight=None) * 100, 4), '%')
+    print('')
     
     # Transforming offensive formations back from integers to strings
     testVals = [next((k for k, v in mappings.offensiveFormationsMappings.items() if v == i), i) for i in y_test.values.tolist()]
@@ -144,6 +140,33 @@ for team, value in teamMappings.items():
     })
     print('Actual vs Predicted Offensive Formations:')
     print(comparisonDf)
+    print('')
+
+    # Print the predicted class and the corresponding probabilities, changing plays from 0-5 to string names
+    play = 0
+    for i in range(len(y_pred)):  
+        formationName = next((k for k, v in mappings.offensiveFormationsMappings.items() if v == y_pred[i]), None)
+        classes = model.classes_
+        print(f"Play { play }")
+        print(f"Predicted Formation: { formationName }")
+        print(f"Actual Formation: { comparisonDf['Actual'][i] }")
+        print("Probabilities")
+        
+        x = 0
+        for class_name, proba in zip(classes, y_pred_proba):
+            class_name_string = next((k for k, v in mappings.offensiveFormationsMappings.items() if v == class_name), None)
+            print(f"- { class_name_string }: { np.round(y_pred_proba[i][x], 4) * 100 }% ")
+            x += 1
+        
+        play += 1
+        print('')
+    
+    print('')
+    print("Classification Report:")
+    print(classification_report(y_test , y_pred))
+    
+    teamPredictability[teamName] = round(accuracy_score(y_test, y_pred, sample_weight=None), 2)
+    
 
 print('*------------------------------------*')
 print('')
