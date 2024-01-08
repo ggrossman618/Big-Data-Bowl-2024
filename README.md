@@ -21,4 +21,4 @@ Set Up Your Environment:
 
 Run the engine via command line:
 
-    python3 engine.py
+    python3 retaliationPlays.py
